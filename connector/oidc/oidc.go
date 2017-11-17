@@ -24,6 +24,9 @@ type Config struct {
 	ClientSecret string `json:"clientSecret"`
 	RedirectURI  string `json:"redirectURI"`
 
+	TrustedEmailProvider bool   `json:"trustedEmailProvider"`
+	EmailClaim           string `json:"emailClaim"`
+
 	// Causes client_secret to be passed as POST parameters instead of basic
 	// auth. This is specifically "NOT RECOMMENDED" by the OAuth2 RFC, but some
 	// providers require it.
@@ -116,6 +119,8 @@ func (c *Config) Open(id string, logger logrus.FieldLogger) (conn connector.Conn
 		logger:        logger,
 		cancel:        cancel,
 		hostedDomains: c.HostedDomains,
+		trustedEmailProvider: c.TrustedEmailProvider,
+		emailClaim:   c.EmailClaim,
 	}, nil
 }
 
@@ -132,6 +137,8 @@ type oidcConnector struct {
 	cancel        context.CancelFunc
 	logger        logrus.FieldLogger
 	hostedDomains []string
+	trustedEmailProvider bool
+	emailClaim           string
 }
 
 func (c *oidcConnector) Close() error {
@@ -194,6 +201,27 @@ func (c *oidcConnector) HandleCallback(s connector.Scopes, r *http.Request) (ide
 	if err := idToken.Claims(&claims); err != nil {
 		return identity, fmt.Errorf("oidc: failed to decode claims: %v", err)
 	}
+   
+    var allClaims Claims
+	if err := idToken.Claims(&allClaims); err != nil {
+		return identity, fmt.Errorf("oidc: failed to decode claims: %v", err)
+	}
+
+    if c.emailClaim != "" {
+	    email, ok, err := allClaims.StringClaim(c.emailClaim)
+	    if err != nil {
+	    	return identity, fmt.Errorf("oidc: failed to get custom email claim '%s' from provider: %v",c.emailClaim, err)
+	    }
+	    if !ok {
+	        return identity, fmt.Errorf("oidc: custom email claim '%s' not found.",c.emailClaim)	
+	    }
+	    claims.Email = email
+		fmt.Printf("email: %s\n", email)
+	}
+
+	if c.trustedEmailProvider {
+		claims.EmailVerified = true
+	}
 
 	if len(c.hostedDomains) > 0 {
 		found := false
@@ -222,3 +250,20 @@ func (c *oidcConnector) HandleCallback(s connector.Scopes, r *http.Request) (ide
 func (c *oidcConnector) Refresh(ctx context.Context, s connector.Scopes, identity connector.Identity) (connector.Identity, error) {
 	return identity, nil
 }
+
+type Claims map[string]interface{}
+
+func (c Claims) StringClaim(name string) (string, bool, error) {
+	cl, ok := c[name]
+	if !ok {
+		return "", false, nil
+	}
+
+	v, ok := cl.(string)
+	if !ok {
+		return "", false, fmt.Errorf("unable to parse claim as string: %v", name)
+	}
+
+	return v, true, nil
+}
+
