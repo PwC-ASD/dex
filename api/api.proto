@@ -24,6 +24,32 @@ message CreateClientResp {
   Client client = 2; 
 }
 
+// AddClientRedirectUriReq is a request to register a new redirect URI to an existing client.
+message AddClientRedirectUriReq {
+  // The ID of the client.
+  string id = 1;
+  string redirect_uri = 2;
+}
+
+// AddClientRedirectUriResp return the response from registering a new redirect URI to an existing client.
+message AddClientRedirectUriResp {
+  bool client_not_found = 1;
+  bool redirect_uri_already_exists = 2;
+}
+
+// RemoveClientRedirectUriReq is a request to remove a redirect URI of an existing client.
+message RemoveClientRedirectUriReq {
+  // The ID of the client.
+  string id = 1;
+  string redirect_uri = 2;
+}
+
+// RemoveClientRedirectUriResp return the response from removing a redirect URI of an existing client.
+message RemoveClientRedirectUriResp {
+  bool client_not_found = 1;
+  bool redirect_uri_not_found = 2;
+}
+
 // DeleteClientReq is a request to delete a client.
 message DeleteClientReq {
   // The ID of the client.
@@ -137,6 +163,10 @@ message RevokeRefreshResp {
 service Dex {
   // CreateClient creates a client.
   rpc CreateClient(CreateClientReq) returns (CreateClientResp) {};
+  // AddClientRedirectUri register a redirect URI to an existing client.
+  rpc AddClientRedirectUri(AddClientRedirectUriReq) returns (AddClientRedirectUriResp) {};
+  // RemoveClientRedirectUri remove a redirect URI of an existing client.
+  rpc RemoveClientRedirectUri(RemoveClientRedirectUriReq) returns (RemoveClientRedirectUriResp) {};
   // DeleteClient deletes the provided client.
   rpc DeleteClient(DeleteClientReq) returns (DeleteClientResp) {};
   // CreatePassword creates a password.

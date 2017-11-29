@@ -79,6 +79,62 @@ func (d dexAPI) CreateClient(ctx context.Context, req *api.CreateClientReq) (*ap
 	}, nil
 }
 
+func (d dexAPI) AddClientRedirectUri(ctx context.Context, req *api.AddClientRedirectUriReq) (*api.AddClientRedirectUriResp, error) {
+	errRedirectUriAlreadyExists := errors.New("redirect URI already exists")
+	err := d.s.UpdateClient(req.Id, func (client storage.Client) (storage.Client, error) {
+		for _, redirectUri := range client.RedirectURIs {
+			if redirectUri == req.RedirectUri {
+				return client, errRedirectUriAlreadyExists
+			}
+		}
+		client.RedirectURIs = append(client.RedirectURIs, req.RedirectUri)
+		return client, nil
+	})
+	if err != nil {
+		if err == storage.ErrNotFound {
+			return &api.AddClientRedirectUriResp{
+				ClientNotFound: true,
+			}, nil
+		}
+		if err == errRedirectUriAlreadyExists {
+			return &api.AddClientRedirectUriResp{
+				RedirectUriAlreadyExists: true,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &api.AddClientRedirectUriResp{}, nil
+}
+
+func (d dexAPI) RemoveClientRedirectUri(ctx context.Context, req *api.RemoveClientRedirectUriReq) (*api.RemoveClientRedirectUriResp, error) {
+	errRedirectUriNotFound := errors.New("redirect URI not found")
+	err := d.s.UpdateClient(req.Id, func (client storage.Client) (storage.Client, error) {
+		for i, redirectUri := range client.RedirectURIs {
+			if redirectUri == req.RedirectUri {
+				client.RedirectURIs = append(client.RedirectURIs[:i], client.RedirectURIs[i+1:]...)
+				return client, nil
+			}
+		}
+		return client, errRedirectUriNotFound
+	})
+	if err != nil {
+		if err == storage.ErrNotFound {
+			return &api.RemoveClientRedirectUriResp{
+				ClientNotFound: true,
+			}, nil
+		}
+		if err == errRedirectUriNotFound {
+			return &api.RemoveClientRedirectUriResp{
+				RedirectUriNotFound: true,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &api.RemoveClientRedirectUriResp{}, nil
+}
+
 func (d dexAPI) DeleteClient(ctx context.Context, req *api.DeleteClientReq) (*api.DeleteClientResp, error) {
 	err := d.s.DeleteClient(req.Id)
 	if err != nil {
