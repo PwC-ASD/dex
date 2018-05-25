@@ -81,7 +81,7 @@ func (d dexAPI) CreateClient(ctx context.Context, req *api.CreateClientReq) (*ap
 
 func (d dexAPI) AddClientRedirectUri(ctx context.Context, req *api.AddClientRedirectUriReq) (*api.AddClientRedirectUriResp, error) {
 	errRedirectUriAlreadyExists := errors.New("redirect URI already exists")
-	err := d.s.UpdateClient(req.Id, func (client storage.Client) (storage.Client, error) {
+	err := d.s.UpdateClient(req.Id, func(client storage.Client) (storage.Client, error) {
 		for _, redirectUri := range client.RedirectURIs {
 			if redirectUri == req.RedirectUri {
 				return client, errRedirectUriAlreadyExists
@@ -109,7 +109,7 @@ func (d dexAPI) AddClientRedirectUri(ctx context.Context, req *api.AddClientRedi
 
 func (d dexAPI) RemoveClientRedirectUri(ctx context.Context, req *api.RemoveClientRedirectUriReq) (*api.RemoveClientRedirectUriResp, error) {
 	errRedirectUriNotFound := errors.New("redirect URI not found")
-	err := d.s.UpdateClient(req.Id, func (client storage.Client) (storage.Client, error) {
+	err := d.s.UpdateClient(req.Id, func(client storage.Client) (storage.Client, error) {
 		for i, redirectUri := range client.RedirectURIs {
 			if redirectUri == req.RedirectUri {
 				client.RedirectURIs = append(client.RedirectURIs[:i], client.RedirectURIs[i+1:]...)

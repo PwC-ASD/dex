@@ -116,11 +116,11 @@ func (c *Config) Open(id string, logger logrus.FieldLogger) (conn connector.Conn
 		verifier: provider.Verifier(
 			&oidc.Config{ClientID: clientID},
 		),
-		logger:        logger,
-		cancel:        cancel,
-		hostedDomains: c.HostedDomains,
+		logger:               logger,
+		cancel:               cancel,
+		hostedDomains:        c.HostedDomains,
 		trustedEmailProvider: c.TrustedEmailProvider,
-		emailClaim:   c.EmailClaim,
+		emailClaim:           c.EmailClaim,
 	}, nil
 }
 
@@ -130,13 +130,13 @@ var (
 )
 
 type oidcConnector struct {
-	redirectURI   string
-	oauth2Config  *oauth2.Config
-	verifier      *oidc.IDTokenVerifier
-	ctx           context.Context
-	cancel        context.CancelFunc
-	logger        logrus.FieldLogger
-	hostedDomains []string
+	redirectURI          string
+	oauth2Config         *oauth2.Config
+	verifier             *oidc.IDTokenVerifier
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	logger               logrus.FieldLogger
+	hostedDomains        []string
 	trustedEmailProvider bool
 	emailClaim           string
 }
@@ -201,21 +201,21 @@ func (c *oidcConnector) HandleCallback(s connector.Scopes, r *http.Request) (ide
 	if err := idToken.Claims(&claims); err != nil {
 		return identity, fmt.Errorf("oidc: failed to decode claims: %v", err)
 	}
-   
-    var allClaims Claims
+
+	var allClaims Claims
 	if err := idToken.Claims(&allClaims); err != nil {
 		return identity, fmt.Errorf("oidc: failed to decode claims: %v", err)
 	}
 
-    if c.emailClaim != "" {
-	    email, ok, err := allClaims.StringClaim(c.emailClaim)
-	    if err != nil {
-	    	return identity, fmt.Errorf("oidc: failed to get custom email claim '%s' from provider: %v",c.emailClaim, err)
-	    }
-	    if !ok {
-	        return identity, fmt.Errorf("oidc: custom email claim '%s' not found.",c.emailClaim)	
-	    }
-	    claims.Email = email
+	if c.emailClaim != "" {
+		email, ok, err := allClaims.StringClaim(c.emailClaim)
+		if err != nil {
+			return identity, fmt.Errorf("oidc: failed to get custom email claim '%s' from provider: %v", c.emailClaim, err)
+		}
+		if !ok {
+			return identity, fmt.Errorf("oidc: custom email claim '%s' not found.", c.emailClaim)
+		}
+		claims.Email = email
 		fmt.Printf("email: %s\n", email)
 	}
 
@@ -266,4 +266,3 @@ func (c Claims) StringClaim(name string) (string, bool, error) {
 
 	return v, true, nil
 }
-
